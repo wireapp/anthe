@@ -11,6 +11,9 @@ flask-restx = "*"
 requests = "*"
 gunicorn = "*"
 prometheus-flask-exporter = "*"
+psycopg2-binary = "*"
+flask-sqlalchemy = "*"
+flask-migrate = "*"
 
 [requires]
 python_version = "3.7"

@@ -15,6 +15,11 @@ class Config:
     roman_url: str
     roman_token: str
 
+    postgres_user: str
+    postgres_password: str
+    postgres_db: str
+    postgres_url: str
+
 
 def get_config() -> Config:
     """
@@ -31,7 +36,11 @@ def build_configuration() -> Config:
     """
     logger.debug('Building configuration.')
     config = Config(roman_url=sanitize_url(get_prop('ROMAN_URL')),
-                    roman_token=get_prop('ROMAN_TOKEN'))
+                    roman_token=get_prop('ROMAN_TOKEN'),
+                    postgres_user=get_prop('POSTGRES_USER'),
+                    postgres_password=get_prop('POSTGRES_PASSWORD'),
+                    postgres_db=get_prop('POSTGRES_DB'),
+                    postgres_url=get_prop('POSTGRES_URL'))
     logger.debug(f'Used configuration: {config}')
     return config
 
