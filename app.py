@@ -59,7 +59,7 @@ def configure_database(app, config):
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
     db.init_app(app)
-    Migrate(app, db)
+    return Migrate(app, db)
 
 
 # Create app
@@ -71,7 +71,7 @@ with app.app_context():
     # load app configuration
     load_configuration(app)
     # add db access
-    configure_database(app, get_config())
+    migrate = configure_database(app, get_config())
     # configure APIs
     configure_apis(app)
     # configure prometheus metrics

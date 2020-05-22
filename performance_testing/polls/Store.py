@@ -15,7 +15,7 @@ store: Optional[Storage] = None
 Stores current instance of testing
 """
 
-timestamp = Optional[datetime] = None
+timestamp: Optional[datetime] = None
 """
 Timestamp when this started.
 """

@@ -26,7 +26,7 @@ def get_config() -> Config:
     Obtains configuration from the application context.
     """
     if 'config' not in g:
-        g.version = build_configuration()
+        g.config = build_configuration()
     return g.config
 
 

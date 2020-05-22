@@ -1,3 +1,9 @@
+db:
+	docker-compose up -d db
+
+migrate:
+	flask
+
 docker-build:
 	docker build -t lukaswire/anthe .
 
