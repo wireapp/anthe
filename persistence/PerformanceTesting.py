@@ -1,14 +1,14 @@
 from datetime import datetime
 from typing import List
 
-from flask_sqlalchemy import Model
 from sqlalchemy import func, Column, Integer, String, DateTime
 from sqlalchemy.orm import relationship
 
+from persistence.Db import db
 from persistence.PerformanceRecord import PerformanceRecord
 
 
-class PerformanceTesting(Model):
+class PerformanceTesting(db.Model):
     __tablename__ = 'performance_testing'
 
     id = Column(Integer, primary_key=True, autoincrement=True)

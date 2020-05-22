@@ -1,8 +1,9 @@
-from flask_sqlalchemy import Model
 from sqlalchemy import Column, String
 
+from persistence.Db import db
 
-class Conversation(Model):
+
+class Conversation(db.Model):
     __tablename__ = 'conversations'
 
     conversation_id = Column(String(255), primary_key=True, nullable=False)

@@ -1,8 +1,11 @@
 db:
 	docker-compose up -d db
 
-migrate:
-	flask
+add-migration: # add-migration M="some nice name"
+	 flask db migrate -m "$$M"
+
+migrate-db:
+	flask db upgrade
 
 docker-build:
 	docker build -t lukaswire/anthe .

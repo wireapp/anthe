@@ -1,8 +1,9 @@
-from flask_sqlalchemy import Model
 from sqlalchemy import ForeignKey, Integer, Column, String, Boolean, Float
 
+from persistence.Db import db
 
-class PerformanceRecord(Model):
+
+class PerformanceRecord(db.Model):
     __tablename__ = 'performance_record'
 
     id = Column(Integer, primary_key=True, autoincrement=True)
