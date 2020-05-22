@@ -59,5 +59,5 @@ class ResponseHandler:
             logger.warning(f'Invalid json for bot removed - no id set - {json}')
             return
         logger.info(f'Removing bot {bot_id} from the database.')
-        Conversation.query.filter_by(Conversation.bot_id == bot_id).delete()
+        Conversation.query.filter(Conversation.bot_id == bot_id).delete()
         db.session.commit()
