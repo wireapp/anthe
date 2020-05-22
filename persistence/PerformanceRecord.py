@@ -1,5 +1,5 @@
 from flask_sqlalchemy import Model
-from sqlalchemy import ForeignKey, Integer, Column, String, DateTime
+from sqlalchemy import ForeignKey, Integer, Column, String, Boolean, Float
 
 
 class PerformanceRecord(Model):
@@ -9,9 +9,10 @@ class PerformanceRecord(Model):
     performance_testing_id = Column(Integer, ForeignKey('performance_testing.id'), nullable=False)
 
     message = Column(String(255), nullable=False)
-    start = Column(DateTime(timezone=True), nullable=False)
-    end = Column(DateTime(timezone=True), nullable=True)
+    received_valid = Column(Boolean, nullable=False)
+    response_time = Column(Float, nullable=False)
 
-    def __init__(self, message: str, start):
+    def __init__(self, message: str, valid: bool, response_time: float):
         self.message = message
-        self.start = start
+        self.received_valid = valid
+        self.response_time = response_time

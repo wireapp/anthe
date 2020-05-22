@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 class ResponseHandler:
 
     def __init__(self):
-        self.client = RomanClient(get_config())
+        self.client = RomanClient(get_config().roman_url)
 
     def handle_json(self, json: dict):
         """
@@ -34,7 +34,7 @@ class ResponseHandler:
 
     def __init(self, json: dict):
         logger.debug('Init received')
-        self.__send_text("Hello! I'm Performance testing bot!", [], json['token'])
+        self.client.send_text(token=json['token'], text="Hello! I'm Performance testing bot!")
 
     @staticmethod
     def __bot_request(json: dict):
@@ -60,8 +60,4 @@ class ResponseHandler:
             return
         logger.info(f'Removing bot {bot_id} from the database.')
         Conversation.query.filter_by(Conversation.bot_id == bot_id).delete()
-
-    def __send_text(self, message: str, mentions: list, token: str):
-        text = {'data': message, 'mentions': mentions}
-        msg = {'type': 'text', 'text': text}
-        self.client.send_message(token, msg)
+        db.session.commit()

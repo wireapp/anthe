@@ -1,7 +1,13 @@
 import logging
+import time
+from typing import Optional
 
+from client.RomanClient import RomanClient
 from performance_testing.Resolver import Resolver, Command
-from performance_testing.polls.Store import poll_received
+from performance_testing.polls.Client import NewPollConfiguration, send_new_poll
+from performance_testing.polls.Store import poll_received, init_store, release_store
+from persistence.Conversations import Conversation
+from wire_flask.Config import Config
 
 logger = logging.getLogger(__name__)
 
@@ -12,8 +18,7 @@ def build_polls_resolver() -> Resolver:
     """
     return Resolver('PollsResolver', {
         is_new_poll: Command(False, resolve_new_poll),
-        is_execute_new_command: Command(True, resolve_new_execute_command),
-        is_join_execution_command: Command(True, resolve_join_execution_command)
+        is_execute_new_command: Command(True, resolve_new_execute_command)
     })
 
 
@@ -23,7 +28,7 @@ def is_new_poll(data: dict) -> bool:
     return data.get('type') == 'conversation.poll.new' and data.get('poll') and data.get('text')
 
 
-def resolve_new_poll(data: dict):
+def resolve_new_poll(data: dict, _: Config):
     """
     Handles receiving new poll - registers it in the store.
     """
@@ -31,7 +36,7 @@ def resolve_new_poll(data: dict):
         logger.warning(f'Can not resolve new poll when no new poll is present. {data}')
         return
     message = data['text']
-    buttons = data['poll'].get('buttons')
+    buttons = data['poll']['buttons']
     poll_received(message, buttons)
 
 
@@ -43,23 +48,52 @@ def is_execute_new_command(data: dict) -> bool:
            data.get('text').startswith('/execute polls new')
 
 
-def resolve_new_execute_command(data: dict):
+def resolve_new_execute_command(data: dict, config: Config):
     """
     Starts completely new execution plan
     """
-    pass
+    try:
+        count = int(data['text'].replace('/execute polls new'))
+        poll_config = get_poll_config(data, config)
+        if not poll_config:
+            logger.error('Could not build poll configuration, exiting.')
+            return
+    except Exception as ex:
+        logger.error(f'It was not possible to parse count.')
+        logger.exception(ex)
+        return
+
+    execute_test(poll_config, count)
 
 
-# -------- join current execution scheme
+def execute_test(poll_config: NewPollConfiguration, count: int):
+    logger.info('Starting execution New Execute')
+    logger.debug(f'With config {poll_config}')
+    init_store()
+    # maybe add some sleep between each send?
+    for i in range(count):
+        logger.debug(f'Executing {i} request from {count}')
+        send_new_poll(poll_config)
 
-def is_join_execution_command(data: dict) -> bool:
-    return data.get('type') == 'conversation.new_text' and \
-           data.get('text') and \
-           data.get('text').startswith('/execute polls join')
+    # wait 10s per one poll request and then end test
+    sleep_trash_hold = count * 10
+    logger.info(f'New Execute Execution stopped - waiting max threshold {sleep_trash_hold}.')
+    time.sleep(sleep_trash_hold)
+    logger.info('Finalizing test.')
+    release_store()
+    # maybe send some more meaningful results
+    RomanClient(poll_config.roman_url).send_text(token=poll_config.token, text='Execution finished.')
 
 
-def resolve_join_execution_command(data: dict):
-    """
-    Joins current execution.
-    """
-    pass
+def get_poll_config(data: dict, config: Config) -> Optional[NewPollConfiguration]:
+    conversation_id = data.get('conversationId')
+    if not conversation_id:
+        logger.error(f'No Conversation Id specified in json. Could not execute {data}')
+        return None
+    conversation = Conversation.query.filter(Conversation.conversation_id == conversation_id).first()
+    if not conversation:
+        logger.error(f'Could not find conversation with id {conversation_id}')
+        return None
+
+    poll_config = NewPollConfiguration(roman_url=config.roman_url, token=conversation.token)
+    return poll_config

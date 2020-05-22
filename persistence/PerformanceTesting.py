@@ -1,6 +1,11 @@
+from datetime import datetime
+from typing import List
+
 from flask_sqlalchemy import Model
 from sqlalchemy import func, Column, Integer, String, DateTime
 from sqlalchemy.orm import relationship
+
+from persistence.PerformanceRecord import PerformanceRecord
 
 
 class PerformanceTesting(Model):
@@ -13,5 +18,7 @@ class PerformanceTesting(Model):
 
     records = relationship('PerformanceRecord')
 
-    def __init__(self, bot_under_test: str):
+    def __init__(self, bot_under_test: str, start: datetime, end: datetime, records: List[PerformanceRecord]):
         self.bot_under_test = bot_under_test
+        self.start, self.end = start, end
+        self.records = records

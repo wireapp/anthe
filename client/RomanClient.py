@@ -3,16 +3,17 @@ import logging
 
 import requests
 
-from wire_flask.Config import Config
-
 logger = logging.getLogger(__name__)
 
 
 class RomanClient:
-    def __init__(self, config: Config):
-        self.url = config.roman_url
+    def __init__(self, roman_url: str):
+        self.url = roman_url
 
     def send_message(self, token: str, payload: dict) -> str:
+        """
+        Sends data to Roman
+        """
         logger.debug('Sending payload to Roman')
         data = json.dumps(payload)
         logger.debug(f'{data}')
@@ -20,3 +21,11 @@ class RomanClient:
                           headers={"content-type": "application/json", "Authorization": f"Bearer {token}"})
         logger.debug('Data sent.')
         return r.json()['messageId']
+
+    def send_text(self, token: str, text: str):
+        """
+        Creates and formats text message.
+        """
+        text = {'data': text, 'mentions': []}
+        msg = {'type': 'text', 'text': text}
+        self.send_message(token, msg)

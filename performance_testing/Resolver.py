@@ -4,6 +4,8 @@ from typing import Callable, Dict
 
 from flask import current_app
 
+from wire_flask.Config import Config, get_config
+
 logger = logging.getLogger(__name__)
 
 
@@ -39,7 +41,7 @@ class Command:
     Class wrapping commands for resolvers.
     """
 
-    def __init__(self, in_new_thread: bool, func: Callable[[dict], None]):
+    def __init__(self, in_new_thread: bool, func: Callable[[dict, Config], None]):
         self.in_new_thread = in_new_thread
         self.func = func
 
@@ -47,17 +49,18 @@ class Command:
         """
         Executes new command.
         """
+        config = get_config()
         if self.in_new_thread:
             # unpack the object to use context inside the different thread
             # noinspection PyProtectedMember
             Thread(
                 target=execute_with_context,
-                args=(current_app._get_current_object(), self.func, data,)
+                args=(current_app._get_current_object(), self.func, data, config,)
             ).start()
         else:
-            self.func(data)
+            self.func(data, config)
 
 
-def execute_with_context(app, command: Callable[[dict], None], data: dict):
+def execute_with_context(app, command: Callable[[dict, Config], None], data: dict, config: Config):
     with app.app_context():
-        command(data)
+        command(data, config)
