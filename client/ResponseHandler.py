@@ -1,6 +1,9 @@
 import logging
 
 from client.RomanClient import RomanClient
+from performance_testing.DataResolver import resolve_json
+from persistence.Conversations import Conversation
+from persistence.Db import db
 from wire_flask.Config import get_config
 
 logger = logging.getLogger(__name__)
@@ -17,30 +20,46 @@ class ResponseHandler:
         """
         message_type = json.get('type')
         logger.debug(f'Handling message type: {message_type}')
+
         try:
             {
-                'conversation.bot_request': lambda x: logger.info('Bot added to new conversation.'),
+                'conversation.bot_request': self.__bot_request,
                 'conversation.init': self.__init,
-                'conversation.new_text': self.__new_message,
-                'conversation.poll.new': self.__new_poll,
+                'conversation.bot_removed': self.__bot_removed,
                 None: lambda x: logger.error(f'No type received for json: {x}')
-            }[message_type](json)
-        except KeyError:
-            # type is different
-            logger.warning(f'Unhandled type: {message_type}')
+            }.get(message_type, resolve_json)(json)
         except Exception as ex:
+            logger.error(f'Exception during json handling: {json}')
             logger.exception(ex)
 
     def __init(self, json: dict):
-        logger.debug('init received')
-        self.__send_text("Hello! I'm Echo Bot!", [], json['token'])
+        logger.debug('Init received')
+        self.__send_text("Hello! I'm Performance testing bot!", [], json['token'])
 
-    def __new_message(self, json: dict):
-        logger.debug('New text message received.')
-        self.__send_text('Understood', [], json['token'])
+    @staticmethod
+    def __bot_request(json: dict):
+        conversation_id = json.get('conversationId')
+        bot_id = json.get('botId')
+        token = json.get('token')
 
-    def __new_poll(self, json: dict):
-        pass
+        if not conversation_id or not token or not bot_id:
+            logger.warning(f'Invalid init data received - id or token missing. {json}')
+            return
+
+        conversation = Conversation(conversation_id=conversation_id, token=token, bot_id=bot_id)
+        logger.debug(f'New conversation initiated.')
+        db.session.add(conversation)
+        db.session.commit()
+
+    @staticmethod
+    def __bot_removed(json: dict):
+        logger.debug(f'Bot removed from the conversation.')
+        bot_id = json.get('botId')
+        if not bot_id:
+            logger.warning(f'Invalid json for bot removed - no id set - {json}')
+            return
+        logger.info(f'Removing bot {bot_id} from the database.')
+        Conversation.query.filter_by(Conversation.bot_id == bot_id).delete()
 
     def __send_text(self, message: str, mentions: list, token: str):
         text = {'data': message, 'mentions': mentions}

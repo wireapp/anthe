@@ -1,14 +1,14 @@
 import logging
 
-from performance_testing.Resolver import Resolver
+from performance_testing.Resolver import Resolver, Command
 
 logger = logging.getLogger(__name__)
 
 
 def build_echo_roman_resolver() -> Resolver:
     return Resolver("EchoRomanResolver", {
-        is_new_you_said: resolve_you_said,
-        is_execute_command: resolve_execute_command
+        is_new_you_said: Command(False, resolve_you_said),
+        is_execute_command: Command(True, resolve_execute_command)
     })
 
 
