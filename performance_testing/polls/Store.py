@@ -51,8 +51,7 @@ def init_store():
     """
     Create new storage
     """
-    counter.increment()
-    if counter.compare(1):
+    if counter.increment() == 1:
         global store, timestamp
         store, timestamp = Storage(), datetime.utcnow()
 
@@ -62,9 +61,9 @@ def release_store() -> Optional[Storage]:
     """
     Sets storage to None and returns it past value
     """
-    counter.decrement()
+
     global store, timestamp
-    if counter.compare(0):
+    if counter.decrement() == 0:
         s, t = store, timestamp
         store, timestamp = None, None
         move_to_db(s, t, datetime.utcnow())
@@ -82,7 +81,7 @@ def move_to_db(store: Storage, start: datetime, end: datetime):
     records = [PerformanceRecord(
         message=poll.name,
         valid=poll.received_valid,
-        response_time=(poll.request_sent - poll.poll_received).total_seconds()
+        response_time=(poll.request_sent - poll.poll_received).total_seconds() if poll.poll_received else None
     ) for poll in store.storage.values()]
     testing = PerformanceTesting(bot_under_test='polls', start=start, end=end, records=records)
 

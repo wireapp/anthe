@@ -19,9 +19,7 @@ class Resolver:
         Returns true if current instance of resolver
         can be used to resolve request.
         """
-        res = False
-        for can in self.resolvers:
-            res = res or can(data)
+        res = any(can(data) for can in self.resolvers)
         logger.debug(f'{self.name}: {res}')
         return res
 
@@ -30,10 +28,10 @@ class Resolver:
         Passes given data to corresponding resolvers
         and executes them in the new thread with Flask context.
         """
-        for (can, command) in self.resolvers.items():
-            if can(data):
-                logger.debug(f'{self.name} - resolving')
-                command.execute(data)
+        commands = [command for (can, command) in self.resolvers.items() if can(data)]
+        for command in commands:
+            logger.debug(f'{self.name} - resolving')
+            command.execute(data)
 
 
 class Command:

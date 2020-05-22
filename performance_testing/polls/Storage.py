@@ -20,7 +20,7 @@ class Poll:
     request_sent: datetime
 
     poll_received: Optional[datetime] = None
-    received_valid: Optional[bool] = None
+    received_valid: bool = False
 
 
 class Storage:

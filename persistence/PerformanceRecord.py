@@ -10,8 +10,8 @@ class PerformanceRecord(db.Model):
     performance_testing_id = Column(Integer, ForeignKey('performance_testing.id'), nullable=False)
 
     message = Column(String(255), nullable=False)
-    received_valid = Column(Boolean, nullable=False)
-    response_time = Column(Float, nullable=False)
+    received_valid = Column(Boolean, nullable=False, default=False)
+    response_time = Column(Float, nullable=None)
 
     def __init__(self, message: str, valid: bool, response_time: float):
         self.message = message

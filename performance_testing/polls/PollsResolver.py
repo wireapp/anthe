@@ -70,7 +70,7 @@ def execute_test(poll_config: NewPollConfiguration, count: int):
     logger.info('Starting execution New Execute')
     logger.debug(f'With config {poll_config}')
     init_store()
-    # maybe add some sleep between each send?
+    # TODO maybe add some sleep between each send?
     for i in range(count):
         logger.debug(f'Executing {i} request from {count}')
         send_new_poll(poll_config)
