@@ -2,7 +2,7 @@
 Using Roman to test performance of multiple bots.
 
 ## Deployment and runtime
-The docker image image is deployed to docker hub as `lukaswire/anthe`. 
+The docker image is deployed to docker hub as `lukaswire/anthe`. 
 To run the instance one needs to set following env variables:
 ```bash
 # URL of roman
