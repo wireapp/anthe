@@ -53,7 +53,7 @@ def resolve_new_execute_command(data: dict, config: Config):
     Starts completely new execution plan
     """
     try:
-        count = int(data['text'].replace('/execute polls new'))
+        count = int(data['text'].replace('/execute polls new', ''))
         poll_config = get_poll_config(data, config)
         if not poll_config:
             logger.error('Could not build poll configuration, exiting.')
@@ -76,7 +76,7 @@ def execute_test(poll_config: NewPollConfiguration, count: int):
         send_new_poll(poll_config)
 
     # wait 10s per one poll request and then end test
-    sleep_trash_hold = count * 10
+    sleep_trash_hold = count * 1
     logger.info(f'New Execute Execution stopped - waiting max threshold {sleep_trash_hold}.')
     time.sleep(sleep_trash_hold)
     logger.info('Finalizing test.')

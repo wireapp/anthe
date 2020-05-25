@@ -48,7 +48,7 @@ class Storage:
 
         poll.poll_received = datetime.utcnow()
         logger.info(f'Received poll {name}')
-        poll.received_valid = buttons == sorted(buttons)
+        poll.received_valid = poll.buttons == sorted(buttons)
         if not poll.received_valid:
             logger.warning(f'Poll {name} was not valid! Some buttons were missing or were different!')
             logger.warning(f'Sent: {poll.buttons}, received: {sorted(buttons)}')

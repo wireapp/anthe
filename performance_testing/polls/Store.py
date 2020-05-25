@@ -81,7 +81,7 @@ def move_to_db(store: Storage, start: datetime, end: datetime):
     records = [PerformanceRecord(
         message=poll.name,
         valid=poll.received_valid,
-        response_time=(poll.request_sent - poll.poll_received).total_seconds() if poll.poll_received else None
+        response_time=(poll.poll_received - poll.request_sent).total_seconds() if poll.poll_received else None
     ) for poll in store.storage.values()]
     testing = PerformanceTesting(bot_under_test='polls', start=start, end=end, records=records)
 
