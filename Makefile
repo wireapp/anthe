@@ -13,5 +13,5 @@ docker-build:
 docker-run: docker-build
 	docker run --rm -p 8080:8080 lukaswire/anthe
 
-docker-deploy: docker-build
+publish: docker-build
 	docker push lukaswire/anthe
