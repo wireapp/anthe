@@ -19,8 +19,9 @@ class RomanClient:
         logger.debug(f'{data}')
         r = requests.post(f"{self.url}/conversation", data=data,
                           headers={"content-type": "application/json", "Authorization": f"Bearer {token}"})
-        logger.debug('Data sent.')
-        return r.json()['messageId']
+        response = r.json()
+        logger.debug(f'Data sent - {r.status_code} - {response}')
+        return response.get('messageId')
 
     def send_text(self, token: str, text: str):
         """
@@ -28,4 +29,5 @@ class RomanClient:
         """
         text = {'data': text, 'mentions': []}
         msg = {'type': 'text', 'text': text}
+        logger.debug('Sending message')
         self.send_message(token, msg)

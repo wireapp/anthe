@@ -1,8 +1,11 @@
+import logging
 import uuid
 from dataclasses import dataclass
 
 from client.RomanClient import RomanClient
 from performance_testing.polls.Store import new_poll
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass

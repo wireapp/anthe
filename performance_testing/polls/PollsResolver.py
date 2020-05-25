@@ -1,6 +1,7 @@
 import logging
 import math
 import time
+from concurrent import futures
 from concurrent.futures import ThreadPoolExecutor
 from typing import Optional
 
@@ -73,24 +74,33 @@ def execute_test(poll_config: NewPollConfiguration, count: int):
     logger.debug(f'With config {poll_config}')
     init_store()
     # startup the pool
-    executor = ThreadPoolExecutor(round(max(math.log(count), 1)))
+    workers = round(max(math.log(count), 1))
+    logger.debug(f'Creating poll with {workers}')
+    executor = ThreadPoolExecutor(workers)
+    fs = []
     # TODO maybe add some sleep between each send?
     for i in range(count):
         logger.debug(f'Executing {i} request from {count}')
-        executor.submit(send_new_poll, (poll_config,))
-        logger.debug(f'{i} executed')
+        fs.append(executor.submit(send_new_poll, poll_config))
 
-    # delete pool
-    executor.shutdown()
-    # wait one minute for all remaining polls to be delivered
-    sleep_trash_hold = min(count, 60)
+    logger.debug('Waiting on tasks to finish')
+    # wait for all remaining polls to be delivered
+    futures.wait(fs, timeout=count * 1.5)
+
+    logger.debug('Waiting on polls to be received')
+    # wait for all remaining polls to be delivered
+    sleep_trash_hold = min(int(count * 1), 60)
 
     logger.info(f'New Execute Execution stopped - waiting max threshold {sleep_trash_hold}.')
     time.sleep(sleep_trash_hold)
+
     logger.info('Finalizing test.')
     release_store()
     # maybe send some more meaningful results
     RomanClient(poll_config.roman_url).send_text(token=poll_config.token, text='Execution finished.')
+
+    # delete pool
+    executor.shutdown()
 
 
 def get_poll_config(data: dict, config: Config) -> Optional[NewPollConfiguration]:
