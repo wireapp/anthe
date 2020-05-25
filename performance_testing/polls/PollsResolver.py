@@ -1,5 +1,7 @@
 import logging
+import math
 import time
+from concurrent.futures import ThreadPoolExecutor
 from typing import Optional
 
 from client.RomanClient import RomanClient
@@ -70,13 +72,19 @@ def execute_test(poll_config: NewPollConfiguration, count: int):
     logger.info('Starting execution New Execute')
     logger.debug(f'With config {poll_config}')
     init_store()
+    # startup the pool
+    executor = ThreadPoolExecutor(round(max(math.log(count), 1)))
     # TODO maybe add some sleep between each send?
     for i in range(count):
         logger.debug(f'Executing {i} request from {count}')
-        send_new_poll(poll_config)
+        executor.submit(send_new_poll, (poll_config,))
+        logger.debug(f'{i} executed')
 
+    # delete pool
+    executor.shutdown()
     # wait one minute for all remaining polls to be delivered
     sleep_trash_hold = min(count, 60)
+
     logger.info(f'New Execute Execution stopped - waiting max threshold {sleep_trash_hold}.')
     time.sleep(sleep_trash_hold)
     logger.info('Finalizing test.')

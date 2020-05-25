@@ -1,4 +1,5 @@
 import logging
+import threading
 from dataclasses import dataclass
 from datetime import datetime
 from typing import List, Optional, Dict
@@ -30,18 +31,22 @@ class Storage:
 
     def __init__(self):
         self.storage: Dict[str, Poll] = {}
+        self._lock = threading.Lock()
 
     def new_poll(self, name: str, buttons: List[str]):
         """
         Register new poll request that was sent
         """
-        self.storage[name] = Poll(name, sorted(buttons), datetime.utcnow())
+        with self._lock:
+            self.storage[name] = Poll(name, sorted(buttons), datetime.utcnow())
 
     def poll_received(self, name: str, buttons: List[str]):
         """
         Registers receiving new poll
         """
-        poll = self.storage.get(name)
+        with self._lock:
+            poll = self.storage.get(name)
+            
         if not poll:
             logger.warning(f'Received poll {name} that was not sent! Ignoring.')
             return
