@@ -1,5 +1,4 @@
 import logging
-import math
 import time
 from concurrent import futures
 from concurrent.futures import ThreadPoolExecutor
@@ -74,7 +73,7 @@ def execute_test(poll_config: NewPollConfiguration, count: int):
     logger.debug(f'With config {poll_config}')
     init_store()
     # startup the pool
-    workers = round(max(math.log(count), 1))
+    workers = 1
     logger.debug(f'Creating poll with {workers}')
     executor = ThreadPoolExecutor(workers)
     fs = []
