@@ -76,7 +76,7 @@ def execute_test(poll_config: NewPollConfiguration, count: int):
         send_new_poll(poll_config)
 
     # wait one minute for all remaining polls to be delivered
-    sleep_trash_hold = count if count <= 20 else 180
+    sleep_trash_hold = min(count, 180)
     logger.info(f'New Execute Execution stopped - waiting max threshold {sleep_trash_hold}.')
     time.sleep(sleep_trash_hold)
     logger.info('Finalizing test.')
