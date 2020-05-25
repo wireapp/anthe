@@ -41,7 +41,6 @@ def build_configuration() -> Config:
                     postgres_password=get_prop('POSTGRES_PASSWORD'),
                     postgres_db=get_prop('POSTGRES_DB'),
                     postgres_url=get_prop('POSTGRES_URL'))
-    logger.debug(f'Used configuration: {config}')
     return config
 
 
