@@ -63,10 +63,10 @@ def resolve_new_scenario(data: dict, _: Config):
         sc = Scenario(
             scenario_name=name,
             bot_under_test='polls',
-            conversations=[Conversation.query.filter(Conversation.conversation_id == data['conversationId']).all()]
+            conversations=Conversation.query.filter(Conversation.conversation_id == data['conversationId']).all()
         )
-        db.add(sc)
-        db.commit()
+        db.session.add(sc)
+        db.session.commit()
     except Exception as ex:
         logger.error(f'Exception during handling new scenario creation.')
         logger.exception(ex)
@@ -90,7 +90,7 @@ def resolve_join_scenario(data: dict, _: Config):
         sc.conversations.extend(
             Conversation.query.filter(Conversation.conversation_id == data['conversationId']).all()
         )
-        db.commit()
+        db.session.commit()
     except Exception as ex:
         logger.error(f'Exception during handling joining scenario. {data}')
         logger.exception(ex)
@@ -137,6 +137,8 @@ def resolve_execute_scenario(data: dict, config: Config):
     logger.info(f'Waiting for {wait_time}s')
     futures.wait(fs, timeout=wait_time)
     logger.info(f'Scenario {name} finished')
+
+    executor.shutdown()
 
 
 # --------- create new performance execution

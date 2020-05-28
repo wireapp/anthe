@@ -1,17 +1,15 @@
 from typing import List
 
-from sqlalchemy import Column, Integer, String, Table, ForeignKey, UniqueConstraint
-from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy import Column, Integer, String, ForeignKey, UniqueConstraint
 from sqlalchemy.orm import relationship
 
 from persistence.Conversations import Conversation
 from persistence.Db import db
 
-Base = declarative_base()
-association_table = Table(
-    'scenario_conversation', Base.metadata,
+association_table = db.Table(
+    'scenario_conversation', db.Model.metadata,
     Column('scenarios_id', Integer, ForeignKey('scenarios.id')),
-    Column('conversation_id', Integer, ForeignKey('conversations.conversation_id'))
+    Column('conversation_id', String, ForeignKey('conversations.conversation_id'))
 )
 
 
@@ -29,4 +27,5 @@ class Scenario(db.Model):
     def __init__(self, scenario_name: str, bot_under_test: str, conversations: List[Conversation] = None):
         self.scenario_name = scenario_name
         self.bot_under_test = bot_under_test
-        self.conversations = conversations if conversations else []
+        if conversations:
+            self.conversations.extend(conversations)
