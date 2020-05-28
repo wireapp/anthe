@@ -1,4 +1,6 @@
 import logging
+from concurrent import futures
+from concurrent.futures.thread import ThreadPoolExecutor
 from typing import Optional
 
 from performance_testing.Resolver import Resolver, Command
@@ -21,7 +23,8 @@ def build_polls_resolver() -> Resolver:
         is_new_poll: Command(False, resolve_new_poll),
         is_execute_new_command: Command(True, resolve_new_execute_command),
         is_new_scenario: Command(False, resolve_new_scenario),
-        is_join_scenario: Command(False, resolve_join_scenario)
+        is_join_scenario: Command(False, resolve_join_scenario),
+        is_execute_scenario: Command(True, resolve_execute_scenario)
     })
 
 
@@ -48,7 +51,7 @@ def resolve_new_poll(data: dict, _: Config):
 def is_new_scenario(data: dict) -> bool:
     return data.get('type') == 'conversation.new_text' and \
            data.get('text') and \
-           data.get('text').startswith('/execute polls scenario new')
+           data.get('text').startswith('/anthe polls scenario new')
 
 
 def resolve_new_scenario(data: dict, _: Config):
@@ -56,7 +59,7 @@ def resolve_new_scenario(data: dict, _: Config):
     Handles receiving new poll - registers it in the store.
     """
     try:
-        name = data['text'].replace('/execute polls scenario new', '').strip()
+        name = data['text'].replace('/anthe polls scenario new', '').strip()
         sc = Scenario(
             scenario_name=name,
             bot_under_test='polls',
@@ -74,7 +77,7 @@ def resolve_new_scenario(data: dict, _: Config):
 def is_join_scenario(data: dict) -> bool:
     return data.get('type') == 'conversation.new_text' and \
            data.get('text') and \
-           data.get('text').startswith('/execute polls scenario join')
+           data.get('text').startswith('/anthe polls scenario join')
 
 
 def resolve_join_scenario(data: dict, _: Config):
@@ -82,7 +85,7 @@ def resolve_join_scenario(data: dict, _: Config):
     Handles receiving new poll - registers it in the store.
     """
     try:
-        name = data['text'].replace('/execute polls scenario join', '').strip()
+        name = data['text'].replace('/anthe polls scenario join', '').strip()
         sc = Scenario.query.filter(Scenario.scenario_name == name)
         sc.conversations.extend(
             Conversation.query.filter(Conversation.conversation_id == data['conversationId']).all()
@@ -93,12 +96,55 @@ def resolve_join_scenario(data: dict, _: Config):
         logger.exception(ex)
 
 
+# --------- execute scenario
+
+def is_execute_scenario(data: dict) -> bool:
+    return data.get('type') == 'conversation.new_text' and \
+           data.get('text') and \
+           data.get('text').startswith('/anthe polls scenario execute')
+
+
+def resolve_execute_scenario(data: dict, config: Config):
+    """
+    Starts completely new execution plan
+    """
+    try:
+        name, count = data['text'].replace('/anthe polls scenario execute', '').split()
+        count = int(count)
+
+        sc = Scenario.query.filter(Scenario.scenario_name == name).first()
+        tokens = [c.token for c in sc.conversations]
+    except Exception as ex:
+        logger.error(f'It was not possible to parse count. {data}')
+        logger.exception(ex)
+        return
+
+    if not tokens:
+        logger.warning(f'No tokens found for requested scenario! - {data}')
+        return
+
+    executor = ThreadPoolExecutor(len(tokens))
+
+    def run_test(token):
+        poll_config = NewPollConfiguration(roman_url=config.roman_url, token=token)
+        execute_test(poll_config, count)
+
+    logger.info(f'Executing scenario {name}')
+    fs = [executor.submit(run_test, token) for token in tokens]
+    logger.info('All tasks submitted, waiting..')
+    # wait time is computed with respect to each timeout in the code running the tests
+    wait_time = (min(int(count * 1), 60) + count * 1.5) * len(tokens)
+    logger.info(f'Waiting for {wait_time}s')
+    futures.wait(fs, timeout=wait_time)
+    logger.info(f'Scenario {name} finished')
+
+
 # --------- create new performance execution
 
 def is_execute_new_command(data: dict) -> bool:
     return data.get('type') == 'conversation.new_text' and \
            data.get('text') and \
-           data.get('text').startswith('/execute polls new')
+           data.get('text').startswith('/anthe polls new')
 
 
 def resolve_new_execute_command(data: dict, config: Config):
@@ -106,7 +152,7 @@ def resolve_new_execute_command(data: dict, config: Config):
     Starts completely new execution plan
     """
     try:
-        count = int(data['text'].replace('/execute polls new', ''))
+        count = int(data['text'].replace('/anthe polls new', ''))
         poll_config = get_poll_config(data, config)
         if not poll_config:
             logger.error('Could not build poll configuration, exiting.')
