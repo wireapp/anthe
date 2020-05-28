@@ -1,14 +1,13 @@
 import logging
-import time
-from concurrent import futures
-from concurrent.futures import ThreadPoolExecutor
 from typing import Optional
 
-from client.RomanClient import RomanClient
 from performance_testing.Resolver import Resolver, Command
-from performance_testing.polls.Client import NewPollConfiguration, send_new_poll
-from performance_testing.polls.Store import poll_received, init_store, release_store
+from performance_testing.polls.Client import NewPollConfiguration
+from performance_testing.polls.Store import poll_received
+from performance_testing.polls.TestExecutor import execute_test
 from persistence.Conversations import Conversation
+from persistence.Db import db
+from persistence.Scenario import Scenario
 from wire_flask.Config import Config
 
 logger = logging.getLogger(__name__)
@@ -20,7 +19,9 @@ def build_polls_resolver() -> Resolver:
     """
     return Resolver('PollsResolver', {
         is_new_poll: Command(False, resolve_new_poll),
-        is_execute_new_command: Command(True, resolve_new_execute_command)
+        is_execute_new_command: Command(True, resolve_new_execute_command),
+        is_new_scenario: Command(False, resolve_new_scenario),
+        is_join_scenario: Command(False, resolve_join_scenario)
     })
 
 
@@ -42,6 +43,56 @@ def resolve_new_poll(data: dict, _: Config):
     poll_received(message, buttons)
 
 
+# --------- create new scenario
+
+def is_new_scenario(data: dict) -> bool:
+    return data.get('type') == 'conversation.new_text' and \
+           data.get('text') and \
+           data.get('text').startswith('/execute polls scenario new')
+
+
+def resolve_new_scenario(data: dict, _: Config):
+    """
+    Handles receiving new poll - registers it in the store.
+    """
+    try:
+        name = data['text'].replace('/execute polls scenario new', '').strip()
+        sc = Scenario(
+            scenario_name=name,
+            bot_under_test='polls',
+            conversations=[Conversation.query.filter(Conversation.conversation_id == data['conversationId']).all()]
+        )
+        db.add(sc)
+        db.commit()
+    except Exception as ex:
+        logger.error(f'Exception during handling new scenario creation.')
+        logger.exception(ex)
+
+
+# --------- join scenario
+
+def is_join_scenario(data: dict) -> bool:
+    return data.get('type') == 'conversation.new_text' and \
+           data.get('text') and \
+           data.get('text').startswith('/execute polls scenario join')
+
+
+def resolve_join_scenario(data: dict, _: Config):
+    """
+    Handles receiving new poll - registers it in the store.
+    """
+    try:
+        name = data['text'].replace('/execute polls scenario join', '').strip()
+        sc = Scenario.query.filter(Scenario.scenario_name == name)
+        sc.conversations.extend(
+            Conversation.query.filter(Conversation.conversation_id == data['conversationId']).all()
+        )
+        db.commit()
+    except Exception as ex:
+        logger.error(f'Exception during handling joining scenario. {data}')
+        logger.exception(ex)
+
+
 # --------- create new performance execution
 
 def is_execute_new_command(data: dict) -> bool:
@@ -61,45 +112,11 @@ def resolve_new_execute_command(data: dict, config: Config):
             logger.error('Could not build poll configuration, exiting.')
             return
     except Exception as ex:
-        logger.error(f'It was not possible to parse count.')
+        logger.error(f'It was not possible to parse count. {data}')
         logger.exception(ex)
         return
 
     execute_test(poll_config, count)
-
-
-def execute_test(poll_config: NewPollConfiguration, count: int):
-    logger.info('Starting execution New Execute')
-    logger.debug(f'With config {poll_config}')
-    init_store()
-    # startup the pool
-    workers = 1
-    logger.debug(f'Creating poll with {workers}')
-    executor = ThreadPoolExecutor(workers)
-    fs = []
-    # TODO maybe add some sleep between each send?
-    for i in range(count):
-        logger.debug(f'Executing {i} request from {count}')
-        fs.append(executor.submit(send_new_poll, poll_config))
-
-    logger.debug('Waiting on tasks to finish')
-    # wait for all remaining polls to be delivered
-    futures.wait(fs, timeout=count * 1.5)
-
-    logger.debug('Waiting on polls to be received')
-    # wait for all remaining polls to be delivered
-    sleep_trash_hold = min(int(count * 1), 60)
-
-    logger.info(f'New Execute Execution stopped - waiting max threshold {sleep_trash_hold}.')
-    time.sleep(sleep_trash_hold)
-
-    logger.info('Finalizing test.')
-    release_store()
-    # maybe send some more meaningful results
-    RomanClient(poll_config.roman_url).send_text(token=poll_config.token, text='Execution finished.')
-
-    # delete pool
-    executor.shutdown()
 
 
 def get_poll_config(data: dict, config: Config) -> Optional[NewPollConfiguration]:
