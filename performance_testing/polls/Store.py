@@ -84,7 +84,10 @@ def move_to_db(store: Storage, start: datetime, end: datetime):
         response_time=(poll.poll_received - poll.request_sent).total_seconds() if poll.poll_received else None
     ) for poll in store.storage.values()]
     testing = PerformanceTesting(bot_under_test='polls', start=start, end=end, records=records)
-
-    db.session.add(testing)
-    db.session.commit()
-    logger.info('Performance testing saved')
+    try:
+        db.session.add(testing)
+        db.session.commit()
+        logger.info('Performance testing saved')
+    except Exception as ex:
+        logger.error(f'Error while saving store to the database')
+        logger.exception(ex)

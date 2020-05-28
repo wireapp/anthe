@@ -8,8 +8,8 @@ from persistence.Db import db
 
 association_table = db.Table(
     'scenario_conversation', db.Model.metadata,
-    Column('scenarios_id', Integer, ForeignKey('scenarios.id')),
-    Column('conversation_id', String, ForeignKey('conversations.conversation_id'))
+    Column('scenarios_id', Integer, ForeignKey('scenarios.id', ondelete='CASCADE')),
+    Column('conversation_id', String, ForeignKey('conversations.conversation_id', ondelete='CASCADE'))
 )
 
 

@@ -3,6 +3,8 @@ from concurrent import futures
 from concurrent.futures.thread import ThreadPoolExecutor
 from typing import Optional
 
+from flask import current_app
+
 from performance_testing.Resolver import Resolver, Command
 from performance_testing.polls.Client import NewPollConfiguration
 from performance_testing.polls.Store import poll_received
@@ -86,7 +88,7 @@ def resolve_join_scenario(data: dict, _: Config):
     """
     try:
         name = data['text'].replace('/anthe polls scenario join', '').strip()
-        sc = Scenario.query.filter(Scenario.scenario_name == name)
+        sc = Scenario.query.filter(Scenario.scenario_name == name).first()
         sc.conversations.extend(
             Conversation.query.filter(Conversation.conversation_id == data['conversationId']).all()
         )
@@ -125,17 +127,23 @@ def resolve_execute_scenario(data: dict, config: Config):
 
     executor = ThreadPoolExecutor(len(tokens))
 
-    def run_test(token):
-        poll_config = NewPollConfiguration(roman_url=config.roman_url, token=token)
-        execute_test(poll_config, count)
+    def run_test(params):
+        token, app = params
+        with app.app_context():
+            poll_config = NewPollConfiguration(roman_url=config.roman_url, token=token)
+            execute_test(poll_config, count)
 
     logger.info(f'Executing scenario {name}')
-    fs = [executor.submit(run_test, token) for token in tokens]
+
+    # noinspection PyProtectedMember
+    app_context = current_app._get_current_object()
+    fs = [executor.submit(run_test, (token, app_context)) for token in tokens]
     logger.info('All tasks submitted, waiting..')
+
     # wait time is computed with respect to each timeout in the code running the tests
     wait_time = (min(int(count * 1), 60) + count * 1.5) * len(tokens)
     logger.info(f'Waiting for {wait_time}s')
-    futures.wait(fs, timeout=wait_time)
+    futures.wait(fs)
     logger.info(f'Scenario {name} finished')
 
     executor.shutdown()

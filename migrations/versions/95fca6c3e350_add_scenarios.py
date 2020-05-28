@@ -1,15 +1,15 @@
 """add scenarios
 
-Revision ID: 8489d31cb420
+Revision ID: 95fca6c3e350
 Revises: a2aa08c0b304
-Create Date: 2020-05-28 14:09:48.533186
+Create Date: 2020-05-28 14:54:13.002845
 
 """
 import sqlalchemy as sa
 from alembic import op
 
 # revision identifiers, used by Alembic.
-revision = '8489d31cb420'
+revision = '95fca6c3e350'
 down_revision = 'a2aa08c0b304'
 branch_labels = None
 depends_on = None
@@ -27,8 +27,8 @@ def upgrade():
     op.create_table('scenario_conversation',
                     sa.Column('scenarios_id', sa.Integer(), nullable=True),
                     sa.Column('conversation_id', sa.String(), nullable=True),
-                    sa.ForeignKeyConstraint(['conversation_id'], ['conversations.conversation_id'], ),
-                    sa.ForeignKeyConstraint(['scenarios_id'], ['scenarios.id'], )
+                    sa.ForeignKeyConstraint(['conversation_id'], ['conversations.conversation_id'], ondelete='CASCADE'),
+                    sa.ForeignKeyConstraint(['scenarios_id'], ['scenarios.id'], ondelete='CASCADE')
                     )
     # ### end Alembic commands ###
 

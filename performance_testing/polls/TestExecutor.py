@@ -14,6 +14,16 @@ logger = logging.getLogger(__name__)
 def execute_test(poll_config: NewPollConfiguration, count: int):
     logger.info('Starting execution New Execute')
     logger.debug(f'With config {poll_config}')
+
+    try:
+        execute_test_unsafe(poll_config, count)
+        logger.info(f'Test executed successfully')
+    except Exception as ex:
+        logger.error(f'Error during test execution {poll_config}, {count}')
+        logger.exception(ex)
+
+
+def execute_test_unsafe(poll_config: NewPollConfiguration, count: int):
     init_store()
     # startup the pool
     workers = round(max(math.log(count), 1))

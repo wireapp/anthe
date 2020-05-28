@@ -18,7 +18,8 @@ class PerformanceTesting(db.Model):
 
     records = relationship('PerformanceRecord')
 
-    def __init__(self, bot_under_test: str, start: datetime, end: datetime, records: List[PerformanceRecord]):
+    def __init__(self, bot_under_test: str, start: datetime, end: datetime, records: List[PerformanceRecord] = None):
         self.bot_under_test = bot_under_test
         self.start, self.end = start, end
-        self.records = records
+        if records:
+            self.records.extend(records)
