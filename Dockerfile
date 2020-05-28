@@ -4,11 +4,13 @@ RUN pip install psycopg2-binary
 
 # ----------- download python dependencies -----------
 FROM base AS install
+
+WORKDIR /app
 # install pipenv
 RUN pip install pipenv
 
 # copy dependencies
-COPY Pipfile* /
+COPY Pipfile* ./
 
 # install dependencies
 RUN pipenv lock -r > requirements.txt
