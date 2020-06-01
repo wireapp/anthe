@@ -29,8 +29,7 @@ WORKDIR /app
 ARG release_version=development
 ENV RELEASE_FILE_PATH=/app/release.txt
 RUN echo $release_version > $RELEASE_FILE_PATH
-
-ENV JSON_LOGGING='true'
+ENV JSON_LOGGING=true
 
 # start app
 EXPOSE 8080
