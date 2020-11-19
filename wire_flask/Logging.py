@@ -1,10 +1,12 @@
 import json
 import logging
 import sys
-import traceback
 from datetime import datetime, timezone
 from logging import Logger
 
+import traceback
+
+from wire_flask.Metrics import errors_logged, warnings_logged
 from wire_flask.RequestId import request_id
 
 
@@ -12,11 +14,11 @@ def setup_logging(name: str, level=logging.DEBUG, json_logging=True) -> Logger:
     """
     Sets up root logger.
     """
-    if json_logging:
-        setup_json_logging(level)
-    else:
-        setup_plain_logging(level)
-
+    # if json_logging:
+    #     setup_json_logging(level)
+    # else:
+    #     setup_plain_logging(level)
+    setup_json_logging(level)
     # disable useless logging from flask
     logging.getLogger('werkzeug').setLevel(logging.WARNING)
     logging.getLogger('urllib3.connectionpool').setLevel(logging.WARNING)
@@ -54,7 +56,7 @@ class JsonFormatter(logging.Formatter):
         super(JsonFormatter, self).__init__()
 
     @staticmethod
-    def __prepare_log_data(record):
+    def _prepare_log_data(record):
         data = {
             # we can't use isoformat as it is not really ISO, because it is missing Z
             # thus this strftime is real ISO
@@ -72,20 +74,20 @@ class JsonFormatter(logging.Formatter):
             pass
         return data
 
-    def __transform_value(self, k_renamed, v):
+    def _transform_value(self, k_renamed, v):
         return self.transformations[k_renamed](v) if k_renamed in self.transformations else v
 
-    def __copy_valid_data(self, record, data):
+    def _copy_valid_data(self, record, data):
         # copy only necessary data
         for k, v in vars(record).items():
             if k in self.ignored or not v:
                 continue
             k_renamed = self.renaming.get(k)
             k = k_renamed if k_renamed else k
-            data[k] = self.__transform_value(k, v)
+            data[k] = self._transform_value(k, v)
 
     @staticmethod
-    def __insert_exception(record, data):
+    def _insert_exception(record, data):
         if not record.exc_info:
             return
         # copy exception if there's one
@@ -103,11 +105,22 @@ class JsonFormatter(logging.Formatter):
             logger.error(f'Original exception {exception}')
             logger.error(f'Original record: {record}')
 
+    @staticmethod
+    def _logging_metrics(data: dict):
+        severity = data.get('severity')
+        if not severity:
+            return
+        elif severity == 'ERROR':
+            errors_logged.inc(1)
+        elif severity == 'WARNING':
+            warnings_logged.inc(1)
+
     def format(self, record):
-        data = self.__prepare_log_data(record)
-        self.__copy_valid_data(record, data)
-        self.__insert_exception(record, data)
+        data = self._prepare_log_data(record)
+        self._copy_valid_data(record, data)
+        self._insert_exception(record, data)
         try:
+            self._logging_metrics(data)
             j = json.dumps(data)
             return j
         except Exception as ex:
